@@ -33,5 +33,3 @@
 ## Deployment
 - Deploy frontend ke Vercel.
 - Pastikan environment variable `VITE_API_URL` diarahkan ke backend production.
-
-
