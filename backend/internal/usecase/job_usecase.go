@@ -83,9 +83,6 @@ func (u *jobUseCase) GetDashboardStats(ctx context.Context) (*dto.DashboardStats
 		return nil, err
 	}
 
-	// For simplicity, treat distinct candidate names as candidates.
-	// In a more complete model we'd normalize candidates table.
-	// We'll approximate via unique candidate_name using pipeline query.
 	pipeline, err := u.appRepo.FindPipeline(ctx)
 	if err != nil {
 		return nil, err
@@ -110,9 +107,6 @@ func (u *jobUseCase) GetPipeline(ctx context.Context) (*dto.PipelineResponse, er
 		return nil, err
 	}
 
-	// Need job title. We'll do a second query is avoided by keeping the model simple.
-	// We'll set JobTitle as "Job #<id>" placeholder.
-	// (We will improve by joining jobs table in repository after migrations.)
 	applied := make([]dto.PipelineResponseItem, 0)
 	interview := make([]dto.PipelineResponseItem, 0)
 	hired := make([]dto.PipelineResponseItem, 0)
@@ -149,9 +143,7 @@ func (u *jobUseCase) CreateApplication(ctx context.Context, req *dto.CreateAppli
 	return u.appRepo.Create(ctx, app)
 }
 
-// local helper to avoid importing strconv in multiple places
 func itoa(v uint) string {
-	// safe for demo sizes
 	if v == 0 {
 		return "0"
 	}

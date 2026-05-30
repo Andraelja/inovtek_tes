@@ -11,7 +11,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// UserUseCase defines the user use case interface
 type UserUseCase interface {
 	Register(ctx context.Context, req *dto.RegisterRequest) (*dto.UserResponse, error)
 	Login(ctx context.Context, req *dto.LoginRequest) (*dto.LoginResponse, error)
@@ -26,7 +25,6 @@ type userUseCase struct {
 	jwtManager *utils.JWTManager
 }
 
-// NewUserUseCase creates a new user use case
 func NewUserUseCase(userRepo repository.UserRepository, jwtManager *utils.JWTManager) UserUseCase {
 	return &userUseCase{
 		userRepo:   userRepo,
@@ -34,9 +32,7 @@ func NewUserUseCase(userRepo repository.UserRepository, jwtManager *utils.JWTMan
 	}
 }
 
-// Register registers a new user
 func (u *userUseCase) Register(ctx context.Context, req *dto.RegisterRequest) (*dto.UserResponse, error) {
-	// Check if email already exists
 	existingUser, err := u.userRepo.FindByEmail(ctx, req.Email)
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, err
@@ -45,13 +41,11 @@ func (u *userUseCase) Register(ctx context.Context, req *dto.RegisterRequest) (*
 		return nil, errors.New("email already registered")
 	}
 
-	// Hash password
 	hashedPassword, err := utils.HashPassword(req.Password)
 	if err != nil {
 		return nil, err
 	}
 
-	// Create user
 	user := &entity.User{
 		Name:     req.Name,
 		Email:    req.Email,
@@ -75,9 +69,7 @@ func (u *userUseCase) Register(ctx context.Context, req *dto.RegisterRequest) (*
 	}, nil
 }
 
-// Login logs in a user
 func (u *userUseCase) Login(ctx context.Context, req *dto.LoginRequest) (*dto.LoginResponse, error) {
-	// Find user by email
 	user, err := u.userRepo.FindByEmail(ctx, req.Email)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -86,17 +78,14 @@ func (u *userUseCase) Login(ctx context.Context, req *dto.LoginRequest) (*dto.Lo
 		return nil, err
 	}
 
-	// Check password
 	if !utils.CheckPassword(req.Password, user.Password) {
 		return nil, errors.New("invalid email or password")
 	}
 
-	// Check if user is active
 	if !user.IsActive {
 		return nil, errors.New("account is not active")
 	}
 
-	// Generate JWT token
 	token, err := u.jwtManager.GenerateToken(user.ID, user.Email, user.Role)
 	if err != nil {
 		return nil, err
@@ -116,7 +105,6 @@ func (u *userUseCase) Login(ctx context.Context, req *dto.LoginRequest) (*dto.Lo
 	}, nil
 }
 
-// GetByID gets a user by ID
 func (u *userUseCase) GetByID(ctx context.Context, id uint) (*dto.UserResponse, error) {
 	user, err := u.userRepo.FindByID(ctx, id)
 	if err != nil {
@@ -137,7 +125,6 @@ func (u *userUseCase) GetByID(ctx context.Context, id uint) (*dto.UserResponse, 
 	}, nil
 }
 
-// GetAll gets all users with pagination
 func (u *userUseCase) GetAll(ctx context.Context, page, limit int) ([]dto.UserResponse, int64, error) {
 	users, total, err := u.userRepo.FindAll(ctx, page, limit)
 	if err != nil {
@@ -160,7 +147,6 @@ func (u *userUseCase) GetAll(ctx context.Context, page, limit int) ([]dto.UserRe
 	return response, total, nil
 }
 
-// Update updates a user
 func (u *userUseCase) Update(ctx context.Context, id uint, req *dto.UpdateUserRequest) (*dto.UserResponse, error) {
 	user, err := u.userRepo.FindByID(ctx, id)
 	if err != nil {
@@ -170,12 +156,10 @@ func (u *userUseCase) Update(ctx context.Context, id uint, req *dto.UpdateUserRe
 		return nil, err
 	}
 
-	// Update fields
 	if req.Name != "" {
 		user.Name = req.Name
 	}
 	if req.Email != "" {
-		// Check if email is already taken by another user
 		existingUser, err := u.userRepo.FindByEmail(ctx, req.Email)
 		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, err
@@ -208,7 +192,6 @@ func (u *userUseCase) Update(ctx context.Context, id uint, req *dto.UpdateUserRe
 	}, nil
 }
 
-// Delete deletes a user
 func (u *userUseCase) Delete(ctx context.Context, id uint) error {
 	_, err := u.userRepo.FindByID(ctx, id)
 	if err != nil {
